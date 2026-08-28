@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Ironlog</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ironlog">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23161513'/%3E%3Crect x='16' y='44' width='68' height='12' rx='2' fill='%23C9A227'/%3E%3Crect x='8' y='34' width='10' height='32' rx='2' fill='%23F5F2EC'/%3E%3Crect x='82' y='34' width='10' height='32' rx='2' fill='%23F5F2EC'/%3E%3C/svg%3E">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#161513;
+    --surface:#211F1C;
+    --surface-2:#2A2724;
+    --border:#3A362F;
+    --text:#F5F2EC;
+    --text-dim:#9C968C;
+    --text-faint:#6B665D;
+    --accent:#C9A227;
+    --accent-dim:#8A701C;
+    --good:#8CA05F;
+    --danger:#B4553F;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; height:100%; overscroll-behavior-y:none;}
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom)); padding-top:env(safe-area-inset-top);}
+  .num{font-family:'Bebas Neue',system-ui,sans-serif; letter-spacing:0.02em;}
+  h1,h2,h3{font-family:'Bebas Neue',system-ui,sans-serif; font-weight:400; letter-spacing:0.03em; margin:0;}
+  button{font-family:inherit;}
+  input, select{font-family:inherit;}
+
+  .screen{display:none; padding:20px 16px 8px; max-width:520px; margin:0 auto;}
+  .screen.active{display:block;}
+
+  .topbar{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px;}
+  .topbar h1{font-size:32px; color:var(--accent);}
+  .topbar .sub{font-size:13px; color:var(--text-faint);}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px;}
+  .row{display:flex; align-items:center; justify-content:space-between;}
+
+  /* Week screen */
+  .day-row{display:flex; align-items:center; justify-content:space-between; padding:14px 4px; border-bottom:1px solid var(--border);}
+  .day-row:last-child{border-bottom:none;}
+  .day-name{font-size:15px; font-weight:600; width:46px;}
+  .day-pick{flex:1; margin-left:10px;}
+  .day-pick select{width:100%; background:transparent; border:none; color:var(--accent); font-size:15px; font-weight:500; padding:6px 0;}
+  .day-pick select:invalid, .day-pick select.rest{color:var(--text-faint);}
+
+  /* Workouts list */
+  .wk-item{display:flex; align-items:center; justify-content:space-between; padding:14px; margin-bottom:10px;}
+  .wk-item .name{font-size:16px; font-weight:600;}
+  .wk-item .count{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .wk-item .del{color:var(--danger); font-size:20px; padding:6px 8px; background:none; border:none;}
+
+  .fab{position:fixed; right:18px; bottom:calc(84px + env(safe-area-inset-bottom)); width:52px; height:52px; border-radius:50%; background:var(--accent); color:#161513; border:none; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.4); z-index:20;}
+
+  /* Exercise chips in editor */
+  .ex-chip{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:var(--surface-2); border-radius:8px; margin-bottom:6px;}
+  .ex-chip button{background:none; border:none; color:var(--text-faint); font-size:18px;}
+
+  .searchbox{width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:15px; margin-bottom:10px;}
+  .searchbox::placeholder{color:var(--text-faint);}
+
+  .lib-group-title{font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin:14px 0 6px;}
+  .lib-item{display:flex; align-items:center; justify-content:space-between; padding:11px 12px; border-bottom:1px solid var(--border);}
+  .lib-item span{font-size:15px;}
+  .lib-item button{background:var(--surface-2); border:1px solid var(--border); color:var(--accent); border-radius:6px; padding:5px 12px; font-size:13px;}
+  .lib-item button.added{color:var(--good); border-color:var(--good);}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:flex-end; justify-content:center; z-index:50;}
+  .modal-bg.active{display:flex;}
+  .modal{background:var(--bg); width:100%; max-width:520px; max-height:82vh; overflow-y:auto; border-radius:16px 16px 0 0; padding:16px 16px calc(20px + env(safe-area-inset-bottom));}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .modal-head h2{font-size:22px;}
+  .modal-head button{background:none; border:none; color:var(--text-dim); font-size:15px;}
+
+  input.text{width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:16px; margin-bottom:12px;}
+
+  .primary-btn{width:100%; background:var(--accent); color:#161513; border:none; border-radius:10px; padding:14px; font-size:15px; font-weight:600;}
+  .ghost-btn{width:100%; background:none; border:1px solid var(--border); color:var(--text-dim); border-radius:10px; padding:12px; font-size:14px; margin-top:8px;}
+
+  /* Today / Log screen */
+  .today-empty{text-align:center; padding:60px 20px; color:var(--text-faint);}
+  .today-empty .num{font-size:44px; color:var(--text-faint);}
+  .log-ex{margin-bottom:18px;}
+  .log-ex h3{font-size:19px; margin-bottom:2px;}
+  .last-time{font-size:12px; color:var(--text-faint); margin-bottom:8px;}
+  .set-row{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .set-row .set-idx{width:22px; font-size:13px; color:var(--text-faint);}
+  .set-row input{flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px; color:var(--text); font-size:16px; text-align:center;}
+  .set-row .x{color:var(--text-faint); font-size:14px;}
+  .set-row .rm{background:none; border:none; color:var(--text-faint); font-size:18px; padding:0 4px;}
+  .add-set{background:none; border:1px dashed var(--border); color:var(--text-dim); border-radius:8px; padding:8px; width:100%; font-size:13px; margin-top:2px;}
+  .delta-up{color:var(--good);}
+  .delta-down{color:var(--danger);}
+
+  .history-item{padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; display:flex; justify-content:space-between;}
+  .history-item .d{color:var(--text-faint); font-size:12px;}
+
+  /* Bottom nav */
+  .navbar{position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); display:flex; padding-bottom:env(safe-area-inset-bottom); z-index:10;}
+  .navbar button{flex:1; background:none; border:none; color:var(--text-faint); padding:12px 0 10px; font-size:11px; display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .navbar button.active{color:var(--accent);}
+  .navbar .icon{width:22px; height:22px;}
+
+  select{-webkit-appearance:none; appearance:none;}
+</style>
+</head>
+<body>
+
+<!-- TODAY -->
+<div class="screen active" id="screen-today">
+  <div class="topbar">
+    <div>
+      <h1 id="today-day-name">Today</h1>
+      <div class="sub" id="today-date"></div>
+    </div>
+  </div>
+  <div id="today-content"></div>
+</div>
+
+<!-- WEEK -->
+<div class="screen" id="screen-week">
+  <div class="topbar"><div><h1>Your week</h1><div class="sub">Repeats automatically until you change it</div></div></div>
+  <div class="card" style="padding:4px 10px;">
+    <div id="week-list"></div>
+  </div>
+</div>
+
+<!-- WORKOUTS -->
+<div class="screen" id="screen-workouts">
+  <div class="topbar"><div><h1>Workouts</h1><div class="sub">Reusable routines</div></div></div>
+  <div id="workouts-list"></div>
+  <button class="fab" onclick="openWorkoutEditor(null)">+</button>
+</div>
+
+<!-- PROGRESS -->
+<div class="screen" id="screen-progress">
+  <div class="topbar"><div><h1>Progress</h1><div class="sub">Pick an exercise</div></div></div>
+  <input class="searchbox" id="progress-search" placeholder="Search exercise history" oninput="renderProgressList()">
+  <div id="progress-list"></div>
+  <div id="progress-detail"></div>
+</div>
+
+<!-- Bottom nav -->
+<div class="navbar">
+  <button data-screen="today" onclick="showScreen('today')">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+    Today
+  </button>
+  <button data-screen="week" onclick="showScreen('week')">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="14" x2="7" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="17" y1="14" x2="17" y2="14"/></svg>
+    Week
+  </button>
+  <button data-screen="workouts" onclick="showScreen('workouts')">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="10" width="4" height="4"/><rect x="18" y="10" width="4" height="4"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+    Workouts
+  </button>
+  <button data-screen="progress" onclick="showScreen('progress')">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/></svg>
+    Progress
+  </button>
+</div>
+
+<!-- Workout editor modal -->
+<div class="modal-bg" id="modal-workout">
+  <div class="modal">
+    <div class="modal-head"><h2 id="we-title">New workout</h2><button onclick="closeModal('modal-workout')">Done</button></div>
+    <input class="text" id="we-name" placeholder="Workout name, e.g. Push day">
+    <div id="we-ex-list"></div>
+    <button class="ghost-btn" onclick="openLibrary()">+ Add exercise</button>
+  </div>
+</div>
+
+<!-- Library picker modal -->
+<div class="modal-bg" id="modal-library">
+  <div class="modal">
+    <div class="modal-head"><h2>Exercise library</h2><button onclick="closeModal('modal-library')">Close</button></div>
+    <input class="searchbox" id="lib-search" placeholder="Search or add custom" oninput="renderLibrary()">
+    <div id="lib-list"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- Exercise library ---------- */
+const EXERCISE_LIBRARY = {
+  "Chest": ["Bench press","Incline bench press","Decline bench press","Dumbbell bench press","Incline dumbbell press","Chest fly","Cable crossover","Push-up","Dips"],
+  "Back": ["Deadlift","Pull-up","Chin-up","Lat pulldown","Barbell row","Dumbbell row","Seated cable row","T-bar row","Face pull","Shrug"],
+  "Shoulders": ["Overhead press","Dumbbell shoulder press","Arnold press","Lateral raise","Front raise","Rear delt fly","Upright row"],
+  "Arms": ["Barbell curl","Dumbbell curl","Hammer curl","Preacher curl","Tricep pushdown","Skull crusher","Overhead tricep extension","Close-grip bench press"],
+  "Legs": ["Squat","Front squat","Leg press","Romanian deadlift","Lunge","Leg extension","Leg curl","Calf raise","Bulgarian split squat","Hip thrust"],
+  "Core": ["Plank","Hanging leg raise","Cable crunch","Russian twist","Ab wheel rollout","Sit-up"],
+  "Cardio": ["Treadmill run","Rowing machine","Cycling","Stair climber","Jump rope"]
+};
+
+/* ---------- Storage ---------- */
+const DB_KEY = "ironlog_v1";
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { workouts:{}, week:{0:null,1:null,2:null,3:null,4:null,5:null,6:null}, logs:{}, customExercises:[] };
+}
+let DB = loadDB();
+function save(){ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* ---------- Nav ---------- */
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.navbar button').forEach(b=>b.classList.toggle('active', b.dataset.screen===name));
+  if(name==='today') renderToday();
+  if(name==='week') renderWeek();
+  if(name==='workouts') renderWorkouts();
+  if(name==='progress') renderProgressList();
+}
+
+/* ---------- WEEK screen ---------- */
+function renderWeek(){
+  const list = document.getElementById('week-list');
+  list.innerHTML = '';
+  for(let d=0; d<7; d++){
+    const row = document.createElement('div');
+    row.className = 'day-row';
+    const wid = DB.week[d];
+    row.innerHTML = `
+      <div class="day-name">${DAY_SHORT[d]}</div>
+      <div class="day-pick">
+        <select onchange="setDayWorkout(${d}, this.value)">
+          <option value="" ${!wid?'selected':''}>Rest day</option>
+          ${Object.values(DB.workouts).map(w=>`<option value="${w.id}" ${wid===w.id?'selected':''}>${escapeHtml(w.name)}</option>`).join('')}
+        </select>
+      </div>`;
+    list.appendChild(row);
+  }
+}
+function setDayWorkout(day, workoutId){
+  DB.week[day] = workoutId || null;
+  save();
+}
+
+/* ---------- WORKOUTS screen ---------- */
+function renderWorkouts(){
+  const list = document.getElementById('workouts-list');
+  const items = Object.values(DB.workouts);
+  if(items.length===0){
+    list.innerHTML = `<div class="today-empty"><div class="num">No workouts yet</div><div style="margin-top:8px; font-size:14px;">Tap + to build your first one</div></div>`;
+    return;
+  }
+  list.innerHTML = items.map(w=>`
+    <div class="card wk-item">
+      <div onclick="openWorkoutEditor('${w.id}')" style="flex:1;">
+        <div class="name">${escapeHtml(w.name)}</div>
+        <div class="count">${w.exercises.length} exercise${w.exercises.length===1?'':'s'}</div>
+      </div>
+      <button class="del" onclick="deleteWorkout('${w.id}')">&times;</button>
+    </div>`).join('');
+}
+function deleteWorkout(id){
+  delete DB.workouts[id];
+  Object.keys(DB.week).forEach(d=>{ if(DB.week[d]===id) DB.week[d]=null; });
+  save();
+  renderWorkouts();
+}
+
+let editingWorkoutId = null;
+let editingExercises = [];
+function openWorkoutEditor(id){
+  editingWorkoutId = id;
+  const w = id ? DB.workouts[id] : null;
+  document.getElementById('we-title').textContent = id ? 'Edit workout' : 'New workout';
+  document.getElementById('we-name').value = w ? w.name : '';
+  editingExercises = w ? [...w.exercises] : [];
+  renderEditorExercises();
+  document.getElementById('modal-workout').classList.add('active');
+}
+function renderEditorExercises(){
+  const list = document.getElementById('we-ex-list');
+  if(editingExercises.length===0){
+    list.innerHTML = `<div style="color:var(--text-faint); font-size:14px; padding:8px 0;">No exercises added yet</div>`;
+  } else {
+    list.innerHTML = editingExercises.map((name,i)=>`
+      <div class="ex-chip"><span>${escapeHtml(name)}</span><button onclick="removeEditorExercise(${i})">&times;</button></div>`).join('');
+  }
+}
+function removeEditorExercise(i){ editingExercises.splice(i,1); renderEditorExercises(); }
+
+function openLibrary(){
+  document.getElementById('lib-search').value = '';
+  renderLibrary();
+  document.getElementById('modal-library').classList.add('active');
+}
+function renderLibrary(){
+  const q = document.getElementById('lib-search').value.trim().toLowerCase();
+  const list = document.getElementById('lib-list');
+  let html = '';
+  const allGroups = {...EXERCISE_LIBRARY, "Custom": DB.customExercises};
+  let anyMatch = false;
+  for(const group in allGroups){
+    const items = allGroups[group].filter(n=>n.toLowerCase().includes(q));
+    if(items.length===0) continue;
+    anyMatch = true;
+    html += `<div class="lib-group-title">${group}</div>`;
+    items.forEach(name=>{
+      const added = editingExercises.includes(name);
+      html += `<div class="lib-item"><span>${escapeHtml(name)}</span><button class="${added?'added':''}" onclick="toggleExercise('${escapeAttr(name)}', this)">${added?'Added':'Add'}</button></div>`;
+    });
+  }
+  if(q && !EXERCISE_LIBRARY_HAS(q)){
+    html += `<div class="lib-group-title">Add custom</div>
+      <div class="lib-item"><span>"${escapeHtml(document.getElementById('lib-search').value.trim())}"</span>
+      <button onclick="addCustomExercise()">Add new</button></div>`;
+  }
+  list.innerHTML = html || `<div style="color:var(--text-faint); padding:10px 0;">No matches — you can add it as custom above.</div>`;
+}
+function EXERCISE_LIBRARY_HAS(q){
+  const all = Object.values(EXERCISE_LIBRARY).flat().concat(DB.customExercises);
+  return all.some(n=>n.toLowerCase()===q);
+}
+function addCustomExercise(){
+  const name = document.getElementById('lib-search').value.trim();
+  if(!name) return;
+  if(!DB.customExercises.some(n=>n.toLowerCase()===name.toLowerCase())){
+    DB.customExercises.push(name);
+    save();
+  }
+  if(!editingExercises.includes(name)) editingExercises.push(name);
+  renderEditorExercises();
+  renderLibrary();
+}
+function toggleExercise(name, btn){
+  const idx = editingExercises.indexOf(name);
+  if(idx>=0){ editingExercises.splice(idx,1); }
+  else { editingExercises.push(name); }
+  renderEditorExercises();
+  renderLibrary();
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('active');
+  if(id==='modal-workout'){
+    const name = document.getElementById('we-name').value.trim();
+    if(name && editingExercises.length>0){
+      const wid = editingWorkoutId || uid();
+      DB.workouts[wid] = { id:wid, name, exercises:editingExercises };
+      save();
+    } else if(editingWorkoutId && (!name || editingExercises.length===0)){
+      // leave as-is if incomplete edit; don't delete existing data silently
+    }
+    renderWorkouts();
+    renderWeek();
+  }
+}
+
+/* ---------- TODAY screen ---------- */
+function todayKey(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function renderToday(){
+  const now = new Date();
+  const dow = now.getDay();
+  document.getElementById('today-date').textContent = now.toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric'});
+  const wid = DB.week[dow];
+  const content = document.getElementById('today-content');
+  if(!wid || !DB.workouts[wid]){
+    document.getElementById('today-day-name').textContent = 'Rest day';
+    content.innerHTML = `<div class="today-empty"><div class="num">No workout scheduled</div><div style="margin-top:8px; font-size:14px;">Set one up in the Week tab</div></div>`;
+    return;
+  }
+  const w = DB.workouts[wid];
+  document.getElementById('today-day-name').textContent = w.name;
+  const key = todayKey();
+  content.innerHTML = w.exercises.map(name=>{
+    const eid = exId(name);
+    const history = (DB.logs[eid]||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
+    const lastSession = history.find(h=>h.date!==key);
+    const todaySession = history.find(h=>h.date===key);
+    const sets = todaySession ? todaySession.sets : [{weight:'',reps:''}];
+    return `
+      <div class="log-ex" data-exid="${eid}">
+        <h3>${escapeHtml(name)}</h3>
+        <div class="last-time">${lastSession ? 'Last time: ' + lastSession.sets.map(s=>`${s.weight}kg x${s.reps}`).join(', ') : 'No history yet'}</div>
+        <div class="sets-container">
+          ${sets.map((s,i)=>setRowHtml(eid,i,s)).join('')}
+        </div>
+        <button class="add-set" onclick="addSetRow('${eid}')">+ Add set</button>
+      </div>`;
+  }).join('');
+}
+function setRowHtml(eid, i, s){
+  return `<div class="set-row" data-i="${i}">
+    <div class="set-idx">${i+1}</div>
+    <input type="number" inputmode="decimal" placeholder="kg" value="${s.weight}" onchange="updateSet('${eid}',${i},'weight',this.value)">
+    <div class="x">x</div>
+    <input type="number" inputmode="numeric" placeholder="reps" value="${s.reps}" onchange="updateSet('${eid}',${i},'reps',this.value)">
+    <button class="rm" onclick="removeSetRow('${eid}',${i})">&times;</button>
+  </div>`;
+}
+function exId(name){ return name.toLowerCase().replace(/[^a-z0-9]+/g,'-'); }
+
+function getTodaySession(eid){
+  const key = todayKey();
+  if(!DB.logs[eid]) DB.logs[eid] = [];
+  let session = DB.logs[eid].find(h=>h.date===key);
+  if(!session){
+    session = { date:key, sets:[{weight:'',reps:''}] };
+    DB.logs[eid].push(session);
+  }
+  return session;
+}
+function updateSet(eid, i, field, value){
+  const session = getTodaySession(eid);
+  if(!session.sets[i]) session.sets[i] = {weight:'',reps:''};
+  session.sets[i][field] = value;
+  save();
+  renderToday();
+}
+function addSetRow(eid){
+  const session = getTodaySession(eid);
+  session.sets.push({weight:'',reps:''});
+  save();
+  renderToday();
+}
+function removeSetRow(eid, i){
+  const session = getTodaySession(eid);
+  session.sets.splice(i,1);
+  if(session.sets.length===0) session.sets.push({weight:'',reps:''});
+  save();
+  renderToday();
+}
+
+/* ---------- PROGRESS screen ---------- */
+function renderProgressList(){
+  const q = document.getElementById('progress-search').value.trim().toLowerCase();
+  const list = document.getElementById('progress-list');
+  const detail = document.getElementById('progress-detail');
+  detail.innerHTML = '';
+  const names = new Set();
+  Object.values(DB.workouts).forEach(w=>w.exercises.forEach(n=>names.add(n)));
+  Object.keys(DB.logs).forEach(eid=>{
+    // include logged exercises even if not in a current workout
+  });
+  const arr = [...names].filter(n=>n.toLowerCase().includes(q));
+  if(arr.length===0){
+    list.innerHTML = `<div style="color:var(--text-faint); padding:20px 0; text-align:center;">No exercises yet — build a workout first</div>`;
+    return;
+  }
+  list.innerHTML = arr.map(name=>{
+    const eid = exId(name);
+    const hasLogs = DB.logs[eid] && DB.logs[eid].length>0;
+    return `<div class="lib-item" onclick="showProgressDetail('${escapeAttr(name)}')" style="cursor:pointer;">
+      <span>${escapeHtml(name)}</span>
+      <span style="color:var(--text-faint); font-size:12px;">${hasLogs? DB.logs[eid].length+' sessions':'—'}</span>
+    </div>`;
+  }).join('');
+}
+function showProgressDetail(name){
+  const eid = exId(name);
+  const detail = document.getElementById('progress-detail');
+  const history = (DB.logs[eid]||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
+  if(history.length===0){
+    detail.innerHTML = `<div class="card" style="margin-top:14px;"><h3>${escapeHtml(name)}</h3><div style="color:var(--text-faint); font-size:14px; margin-top:6px;">No sessions logged yet.</div></div>`;
+    return;
+  }
+  const rows = history.map((h,idx)=>{
+    const maxW = Math.max(...h.sets.map(s=>parseFloat(s.weight)||0));
+    let deltaHtml = '';
+    if(idx < history.length-1){
+      const prevMax = Math.max(...history[idx+1].sets.map(s=>parseFloat(s.weight)||0));
+      const diff = maxW - prevMax;
+      if(diff>0) deltaHtml = `<span class="delta-up">+${diff}kg</span>`;
+      else if(diff<0) deltaHtml = `<span class="delta-down">${diff}kg</span>`;
+    }
+    return `<div class="history-item">
+      <div><div class="d">${h.date}</div>${h.sets.map(s=>`${s.weight||'-'}kg x${s.reps||'-'}`).join(', ')}</div>
+      <div>${deltaHtml}</div>
+    </div>`;
+  }).join('');
+  detail.innerHTML = `<div class="card" style="margin-top:14px;"><h3>${escapeHtml(name)}</h3>${rows}</div>`;
+}
+
+/* ---------- utils ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return String(s).replace(/'/g,"\\'"); }
+
+/* init */
+renderToday();
+</script>
+</body>
+</html>
